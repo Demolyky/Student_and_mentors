@@ -7,6 +7,14 @@ class Student:
         self.courses_in_progress = []
         self.grades = {}
 
+    def rate(self, mentor, course, grade):
+        if isinstance(mentor, Lecturer) and course in mentor.courses_attached\
+           and course in self.courses_in_progress:
+            if course in mentor.grades:
+                mentor.grades[course] += [grade]
+            else:
+                mentor.grades[course] = [grade]
+
 
 class Mentor:
     def __init__(self, name, surname):
@@ -15,7 +23,8 @@ class Mentor:
         self.courses_attached = []
 
     def rate_hw(self, student, course, grade):
-        if isinstance(student, Student) and course in self.courses_attached and course in student.courses_in_progress:
+        if isinstance(student, Student) and course in self.courses_attached\
+           and course in student.courses_in_progress:
             if course in student.grades:
                 student.grades[course] += [grade]
             else:
@@ -38,11 +47,16 @@ class Reviewer(Mentor):
 best_student = Student('Mikhail', 'Volf', 'men')
 best_student.courses_in_progress += ['Python']
 
-cool_mentor = Mentor('Ivan', 'Petrov')
+cool_mentor = Lecturer('Ivan', 'Petrov')
 cool_mentor.courses_attached += ['Python']
 
 cool_mentor.rate_hw(best_student, 'Python', 10)
 cool_mentor.rate_hw(best_student, 'Python', 3)
 cool_mentor.rate_hw(best_student, 'Python', 8)
 
+best_student.rate(cool_mentor, 'Python', 10)
+best_student.rate(cool_mentor, 'Python', 6)
+best_student.rate(cool_mentor, 'Python', 9)
+
 print(best_student.grades)
+print(cool_mentor.grades)
