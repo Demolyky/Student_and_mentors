@@ -3,7 +3,7 @@ class Student:
         self.name = name
         self.surname = surname
         self.gender = gender
-        self. finish_courses = []
+        self.finish_courses = []
         self.courses_in_progress = []
         self.grades = {}
 
@@ -21,10 +21,37 @@ class Student:
             courses.append(course)
             sum_raiting += sum(rate)
             values += len(rate)
-        view_raiting = f'Средняя оценка за домашние задания: {round(sum_raiting/values, 1)}'
-        view_cources_in_progress = f'Курсы в процессе изучения: {", ".join(courses)}'
-        view__finish_courses = f'Завершенные курсы: {", ".join(self.finish_courses)}'
+        if values:
+            view_raiting = f'Средняя оценка за домашние задания: {round(sum_raiting/values, 1) if values!=0 else "0"}'
+        else:
+            view_raiting = 'Оценки отсутствуют'
+        view_cources_in_progress = f'Курсы в процессе изучения: {", ".join(self.courses_in_progress) if self.courses_in_progress else "отсутствуют"}'
+        view__finish_courses = f'Завершенные курсы: {", ".join(self.finish_courses) if self.finish_courses else "отсутствуют"}'
         return f'{view_name}\n{view_surname}\n{view_raiting}\n{view_cources_in_progress}\n{view__finish_courses}'
+
+    def __eq__(self, student):
+        return self.__comparison(student, 'eq')
+
+    def __lt__(self, student):
+        return self.__comparison(student, 'lt')
+
+    def __gt__(self, student):
+        return self.__comparison(student, 'gt')
+
+    def __comparison(self, student, command='eq'):
+        for rate in self.grades.values():
+            self.all_grades += rate
+        self.average_rating = round(sum(self.all_grades)/len(self.all_grades), 1)
+        for rate in student.grades.values():
+            student.all_grades += rate
+        student.average_rating = round(sum(student.all_grades)/len(student.all_grades), 1)
+        match command:
+            case 'eq':
+                return self.average_rating == student.average_rating
+            case 'lt':
+                return self.average_rating < student.average_rating
+            case 'gt':
+                return self.average_rating > student.average_rating
 
 
 class Mentor:
@@ -53,19 +80,23 @@ class Lecturer(Mentor):
     def __str__(self):
         self.view_name = 'Имя: ' + self.name
         self.view_surname = 'Фамилия: ' + self.surname
-        view_rate = 'Средняя оценка за лекции: ' + str(round(sum(self.grades)/len(self.grades), 1))
+        if self.grades:
+            view_rate = f'Средняя оценка за лекции: {str(round(sum(self.grades)/len(self.grades), 1))}'
+        else:
+            view_rate = "Оценки отсутствуют"
+
         return f'{self.view_name}\n{self.view_surname}\n{view_rate}'
 
     def __eq__(self, lecturer):
-        return self.comparison(lecturer, 'eq')
+        return self.__comparison(lecturer, 'eq')
 
     def __lt__(self, lecturer):
-        return self.comparison(lecturer, 'lt')
+        return self.__comparison(lecturer, 'lt')
 
     def __gt__(self, lecturer):
-        return self.comparison(lecturer, 'gt')
+        return self.__comparison(lecturer, 'gt')
 
-    def comparison(self, lecturer, command='eq'):
+    def __comparison(self, lecturer, command='eq'):
         self.average_rating = round(sum(self.grades)/len(self.grades), 1)
         lecturer.average_rating = round(sum(lecturer.grades)/len(lecturer.grades), 1)
         match command:
@@ -85,32 +116,38 @@ class Reviewer(Mentor):
         return f'Имя: {self.name}\nФамилия: {self.surname}'
 
 
-best_student = Student('Mikhail', 'Volf', 'men')
-best_student.courses_in_progress += ['Python', 'Git']
-best_student.finish_courses += ['English for developer']
+def main():
+    student_Evgeniya = Student('Evgeniya', 'Daranovski', 'woman')
+    student_Evgeniya.courses_in_progress += ['Python', 'Git']
 
-cool_mentor = Lecturer('Ivan', 'Petrov')
-cool_mentor.courses_attached += ['Python', 'Git']
+    student_Mikhail = Student('Mikhail', 'Volf', 'man')
+    student_Mikhail.courses_in_progress += ['Python']
 
-cool_lecturer = Lecturer('Mikhail', 'Pavlov')
-cool_lecturer.courses_attached += ['Python']
+    lector_Grigori = Lecturer('Grigoriy', 'Sandrikov')
+    lector_Grigori.courses_attached += ['Python']
 
-cool_mentor.rate_hw(best_student, 'Python', 10)
-cool_mentor.rate_hw(best_student, 'Python', 9)
-cool_mentor.rate_hw(best_student, 'Python', 8)
-cool_mentor.rate_hw(best_student, 'Git', 6)
-cool_mentor.rate_hw(best_student, 'Git', 5)
+    lector_Natali = Lecturer('Natali', 'Bayer')
+    lector_Natali.courses_attached += ['Git']
 
-best_student.rate_hw(cool_mentor, 'Python', 10)
-best_student.rate_hw(cool_mentor, 'Python', 7)
-best_student.rate_hw(cool_mentor, 'Python', 9)
-best_student.rate_hw(cool_lecturer, 'Python', 10)
-best_student.rate_hw(cool_lecturer, 'Python', 7)
-best_student.rate_hw(cool_lecturer, 'Python', 9)
+    reviewer_Serj = Reviewer('Serj', 'Garden')
+    reviewer_Serj.courses_attached += ['Git']
 
-print(best_student.grades)
-print(f'Средняя оценка за лекции: {cool_mentor.grades}')
-print(cool_mentor)
-print(best_student)
-print(cool_lecturer)
-print(cool_mentor < cool_lecturer)
+    student_Evgeniya.rate_hw(lector_Grigori, 'Python', 9)
+    student_Evgeniya.rate_hw(lector_Natali, 'Git', 9)
+    student_Mikhail.rate_hw(lector_Grigori, 'Python', 10)
+    student_Mikhail.rate_hw(lector_Natali, 'Git', 7)
+    lector_Grigori.rate_hw(student_Evgeniya, 'Python', 9)
+    lector_Grigori.rate_hw(student_Evgeniya, 'Python', 8)
+    lector_Grigori.rate_hw(student_Mikhail, 'Python', 10)
+    lector_Grigori.rate_hw(student_Mikhail, 'Python', 10)
+    lector_Natali.rate_hw(student_Mikhail, 'Git', 8)
+    lector_Natali.rate_hw(student_Evgeniya, 'Git', 9)
+    reviewer_Serj.rate_hw(student_Mikhail, 'Git', 4)
+    reviewer_Serj.rate_hw(student_Evgeniya, 'Git', 10)
+
+
+    print(student_Evgeniya)
+    print(student_Mikhail)
+    print(lector_Grigori > lector_Natali)
+
+main()
