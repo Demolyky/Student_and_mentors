@@ -10,24 +10,20 @@ class Student:
     def rate_hw(self, mentor, course, grade):
         if isinstance(mentor, Lecturer) and course in mentor.courses_attached\
            and course in self.courses_in_progress:
-            mentor.grades.append(grade)
+            if course in mentor.grades:
+                mentor.grades[course] += [grade]
+            else:
+                mentor.grades[course] = [grade]
+        else:
+            return 'Ошибка'
 
     def __str__(self):
         view_name = f'Имя: {self.name}'
         view_surname = f'Фамилия: {self.surname}'
-        sum_raiting, values = 0, 0
-        courses = []
-        for course, rate in self.grades.items():
-            courses.append(course)
-            sum_raiting += sum(rate)
-            values += len(rate)
-        if values:
-            view_raiting = f'Средняя оценка за домашние задания: {round(sum_raiting/values, 1) if values!=0 else "0"}'
-        else:
-            view_raiting = 'Оценки отсутствуют'
+        view_rating = f'Средняя оценка за домашние задания: {average_rating(self)}'
         view_cources_in_progress = f'Курсы в процессе изучения: {", ".join(self.courses_in_progress) if self.courses_in_progress else "отсутствуют"}'
         view__finish_courses = f'Завершенные курсы: {", ".join(self.finish_courses) if self.finish_courses else "отсутствуют"}'
-        return f'{view_name}\n{view_surname}\n{view_raiting}\n{view_cources_in_progress}\n{view__finish_courses}'
+        return f'{view_name}\n{view_surname}\n{view_rating}\n{view_cources_in_progress}\n{view__finish_courses}'
 
     def __eq__(self, student):
         return self.__comparison(student, 'eq')
@@ -39,19 +35,13 @@ class Student:
         return self.__comparison(student, 'gt')
 
     def __comparison(self, student, command='eq'):
-        for rate in self.grades.values():
-            self.all_grades += rate
-        self.average_rating = round(sum(self.all_grades)/len(self.all_grades), 1)
-        for rate in student.grades.values():
-            student.all_grades += rate
-        student.average_rating = round(sum(student.all_grades)/len(student.all_grades), 1)
         match command:
             case 'eq':
-                return self.average_rating == student.average_rating
+                return average_rating(self) == average_rating(student)
             case 'lt':
-                return self.average_rating < student.average_rating
+                return average_rating(self) < average_rating(student)
             case 'gt':
-                return self.average_rating > student.average_rating
+                return average_rating(self) > average_rating(student)
 
 
 class Mentor:
@@ -74,17 +64,12 @@ class Mentor:
 class Lecturer(Mentor):
     def __init__(self, name, surname):
         super().__init__(name, surname)
-        self.grades = []
-        self.average_rating = 0.0
+        self.grades = {}
 
     def __str__(self):
         self.view_name = 'Имя: ' + self.name
         self.view_surname = 'Фамилия: ' + self.surname
-        if self.grades:
-            view_rate = f'Средняя оценка за лекции: {str(round(sum(self.grades)/len(self.grades), 1))}'
-        else:
-            view_rate = "Оценки отсутствуют"
-
+        view_rate = f'Средняя оценка за лекции: {average_rating(self)}'
         return f'{self.view_name}\n{self.view_surname}\n{view_rate}'
 
     def __eq__(self, lecturer):
@@ -97,15 +82,13 @@ class Lecturer(Mentor):
         return self.__comparison(lecturer, 'gt')
 
     def __comparison(self, lecturer, command='eq'):
-        self.average_rating = round(sum(self.grades)/len(self.grades), 1)
-        lecturer.average_rating = round(sum(lecturer.grades)/len(lecturer.grades), 1)
         match command:
             case 'eq':
-                return self.average_rating == lecturer.average_rating
+                return average_rating(self) == average_rating(lecturer)
             case 'lt':
-                return self.average_rating < lecturer.average_rating
+                return average_rating(self) < average_rating(lecturer)
             case 'gt':
-                return self.average_rating > lecturer.average_rating
+                return average_rating(self) > average_rating(lecturer)
 
 
 class Reviewer(Mentor):
@@ -116,12 +99,32 @@ class Reviewer(Mentor):
         return f'Имя: {self.name}\nФамилия: {self.surname}'
 
 
+def comparison_course(all_people, course):
+    all_rating, number_people = 0, 0
+    for people in all_people:
+        if course in people.grades.keys():
+            all_rating += average_rating(people, course)
+            number_people += 1
+    return f'По курсу {course} средняя оценка: {all_rating/number_people}'
+
+def average_rating(Class, course=''):
+    course = Class.grades.keys() if course=='' else course
+    sum_rating, values = 0, 0
+    for class_courses in Class.grades.keys():
+        if class_courses in course:
+            sum_rating += sum(Class.grades[course])
+            values += len(Class.grades[course])
+    if Class.grades:
+        return round(sum_rating/values, 1)
+    else:
+        return 0
+
 def main():
     student_Evgeniya = Student('Evgeniya', 'Daranovski', 'woman')
     student_Evgeniya.courses_in_progress += ['Python', 'Git']
 
     student_Mikhail = Student('Mikhail', 'Volf', 'man')
-    student_Mikhail.courses_in_progress += ['Python']
+    student_Mikhail.courses_in_progress += ['Python', 'Git']
 
     lector_Grigori = Lecturer('Grigoriy', 'Sandrikov')
     lector_Grigori.courses_attached += ['Python']
@@ -145,9 +148,12 @@ def main():
     reviewer_Serj.rate_hw(student_Mikhail, 'Git', 4)
     reviewer_Serj.rate_hw(student_Evgeniya, 'Git', 10)
 
-
-    print(student_Evgeniya)
-    print(student_Mikhail)
-    print(lector_Grigori > lector_Natali)
-
+    all_student = [student_Mikhail, student_Evgeniya]
+    all_mentors = [lector_Grigori, lector_Natali]
+    # print(student_Mikhail < student_Evgeniya)
+    print(average_rating(student_Evgeniya, 'Python'))
+    print(average_rating(student_Mikhail, 'Python'))
+    print(comparison_course(all_student, 'Git') + ' за ДЗ')
+    print(comparison_course(all_mentors, 'Git') + ' за лекции')
+    
 main()
